@@ -1,0 +1,13 @@
+{
+  "admins": {
+    "hayden.smith@unsw.edu.au": {
+      "name": "Hayden",
+      "password": "bananapie",
+      "store": {
+        "name": " Hayden",
+        "height": 100
+      },
+      "sessionActive": false
+    }
+  }
+}
