@@ -14,7 +14,7 @@ import {
   save,
   setStore,
 } from "./service.js";
-const { PROD_BACKEND_PORT, USE_REDIS } = process.env;
+const { PROD_BACKEND_PORT, USE_VERCEL_KV } = process.env;
 
 const app = express();
 

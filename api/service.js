@@ -1,16 +1,13 @@
 import AsyncLock from "async-lock";
 import fs from "fs";
 import jwt from "jsonwebtoken";
-import { Redis } from "@upstash/redis";
 import { AccessError, InputError } from "./error.js";
 
 const lock = new AsyncLock();
 
 const JWT_SECRET = "llamallamaduck";
 const DATABASE_FILE = "./database.json";
-const { USE_REDIS } = process.env;
-
-const redis = USE_REDIS ? Redis.fromEnv() : null;
+const { KV_REST_API_URL, KV_REST_API_TOKEN, USE_VERCEL_KV } = process.env;
 /***************************************************************
                        State Management
 ***************************************************************/
@@ -21,9 +18,19 @@ const update = async (admins) =>
   new Promise((resolve, reject) => {
     lock.acquire("saveData", async () => {
       try {
-        if (USE_REDIS) {
-          // Store to Upstash Redis
-          await redis.set("admins", JSON.stringify({ admins }));
+        if (USE_VERCEL_KV) {
+          // Store to Upstash Redis (compatible with Vercel KV API)
+          const response = await fetch(`${KV_REST_API_URL}/set/admins`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${KV_REST_API_TOKEN}`,
+            },
+            body: JSON.stringify({ admins }),
+          });
+          if (!response.ok) {
+            reject(new Error("Writing to Redis failed"));
+          }
         } else {
           // Store to local file system
           fs.writeFileSync(
@@ -52,16 +59,17 @@ export const reset = () => {
 };
 
 try {
-  if (USE_REDIS) {
-    // Read from Upstash Redis
-    const data = await redis.get("admins");
-    if (data) {
-      const parsed = typeof data === "string" ? JSON.parse(data) : data;
-      admins = parsed["admins"] ?? {};
-    } else {
-      // No data yet, initialise
-      await save();
-    }
+  if (USE_VERCEL_KV) {
+    // Read from Upstash Redis (compatible with Vercel KV API)
+    fetch(`${KV_REST_API_URL}/get/admins`, {
+      headers: {
+        Authorization: `Bearer ${KV_REST_API_TOKEN}`,
+      },
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        admins = JSON.parse(data.result)["admins"];
+      });
   } else {
     // Read from local file
     const data = JSON.parse(fs.readFileSync(DATABASE_FILE));
