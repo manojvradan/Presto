@@ -14,7 +14,7 @@ import {
   save,
   setStore,
 } from "./service.js";
-const { PROD_BACKEND_PORT, USE_VERCEL_KV } = process.env;
+const { PROD_BACKEND_PORT, USE_REDIS } = process.env;
 
 const app = express();
 
@@ -109,7 +109,7 @@ app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 const port = USE_VERCEL_KV
   ? PROD_BACKEND_PORT
-  : JSON.parse(fs.readFileSync("../frontend/backend.config.json")).BACKEND_PORT;
+  : JSON.parse(fs.readFileSync("../presto/frontend/backend.config.json")).BACKEND_PORT;
 
 let server;
 if (port) {
